@@ -38,7 +38,15 @@ class ContactView:
         
         # Add Button
         self.add_button = ttk.Button(self.create_frame, text="Add Contact")
-        self.add_button.grid(row=4, columnspan=4, pady=5)
+        self.add_button.grid(row=4, column=0, pady=5, sticky='w')
+        
+        # Delete Button (novo)
+        self.delete_button = ttk.Button(self.create_frame, text="Delete Selected")
+        self.delete_button.grid(row=4, column=1, pady=5, padx=5)
+        
+        # Clear Button (para manter o layout balanceado)
+        self.clear_button = ttk.Button(self.create_frame, text="Clear Form")
+        self.clear_button.grid(row=4, column=2, pady=5)
         
         # Search Frame
         self.search_frame = ttk.Frame(self.root)
@@ -106,6 +114,12 @@ class ContactView:
         self.email_entry.delete(0, tk.END)
         self.address_entry.delete(0, tk.END)
     
+    def get_selected_contact_id(self):
+        selected_item = self.contact_tree.selection()
+        if selected_item:
+            return self.contact_tree.item(selected_item, 'values')[0]
+        return None
+    
     def display_contacts(self, contacts):
         self.contact_tree.delete(*self.contact_tree.get_children())
         for contact in contacts:
@@ -119,6 +133,8 @@ class ContactView:
     
     def bind_events(self, callbacks):
         self.add_button.config(command=callbacks['add_contact'])
+        self.delete_button.config(command=callbacks['delete_contact'])
+        self.clear_button.config(command=callbacks['clear_form'])
         self.search_button.config(command=callbacks['search_contacts'])
         self.about_button.config(command=callbacks['display_about'])
         self.import_csv_button.config(command=callbacks['import_csv'])

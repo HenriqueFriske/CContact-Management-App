@@ -1,10 +1,9 @@
 from model.model import ContactModel
 from view.view import ContactView
+from validators.validators import ContactValidator
 from tkinter import messagebox, filedialog
 import datetime
 from math import ceil
-from validators.validators import ContactValidator
-
 
 class ContactController:
     def __init__(self, root):
@@ -17,6 +16,8 @@ class ContactController:
         # Bind events
         self.view.bind_events({
             'add_contact': self.add_contact,
+            'delete_contact': self.delete_selected_contact,
+            'clear_form': self.clear_form,
             'search_contacts': self.search_contacts,
             'display_about': self.display_about_info,
             'import_csv': self.import_csv,
@@ -51,34 +52,24 @@ class ContactController:
         self.display_contacts()
         messagebox.showinfo("Success", "Contact added successfully.")
     
-    def edit_contact(self, contact_id):
-        data = self.view.get_form_data()
-        errors = ContactValidator.validate_contact(
-            data['name'], 
-            data['phone'], 
-            data['email']
-        )
-        
-        if errors:
-            messagebox.showerror("Validation Error", "\n".join(errors))
-            return
-            
+    def delete_selected_contact(self):
+        contact_id = self.view.get_selected_contact_id()
         if contact_id:
-            self.model.update_contact(
-                contact_id,
-                data['name'],
-                data['phone'],
-                data['email'],
-                data['address']
-            )
-            self.view.clear_form()
-            self.display_contacts()
-            messagebox.showinfo("Edit Successful", "Contact edited successfully.")  
-            
-    def delete_contact(self, contact_id):
-        if contact_id:
-            self.model.delete_contact(contact_id)
-            self.display_contacts()
+            if messagebox.askyesno(
+                "Confirm Delete", 
+                "Are you sure you want to delete this contact?"
+            ):
+                success = self.model.delete_contact(contact_id)
+                if success:
+                    self.display_contacts()
+                    messagebox.showinfo("Success", "Contact deleted successfully")
+                else:
+                    messagebox.showerror("Error", "Failed to delete contact.")
+        else:
+            messagebox.showerror("Error", "Please select a contact to delete.")
+    
+    def clear_form(self):
+        self.view.clear_form()
     
     def display_contacts(self):
         offset = (self.current_page - 1) * self.page_size
@@ -108,23 +99,11 @@ class ContactController:
             filetypes=[("CSV files", "*.csv")]
         )
         if file_path:
-            success, msg = self.export_to_csv(file_path)
+            success, msg = self.model.export_csv(file_path)
             if success:
                 messagebox.showinfo("Export Successful", msg)
             else:
                 messagebox.showerror("Error", msg)
-    
-    def export_to_csv(self, file_path):
-        try:
-            contacts = self.model.get_contacts(0, 10000)  # Get all contacts
-            with open(file_path, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(['ID', 'Name', 'Phone', 'Email', 'Address'])
-                for contact in contacts:
-                    writer.writerow(contact)
-            return True, "Contacts exported successfully to CSV."
-        except Exception as e:
-            return False, f"Error exporting CSV: {str(e)}"
     
     def next_page(self):
         self.current_page += 1
@@ -160,7 +139,6 @@ class ContactController:
             if contact_id:
                 contact = self.model.get_contact_by_id(contact_id)
                 if contact:
-                    # Preenche o formulário com os dados do contato
                     self.view.clear_form()
                     self.view.name_entry.insert(0, contact[1])
                     self.view.phone_entry.insert(0, contact[2])
@@ -178,7 +156,7 @@ class ContactController:
             )
             popup_menu.add_command(
                 label="Delete Contact", 
-                command=lambda: self.delete_contact(contact_id)
+                command=lambda: self.delete_selected_contact()
             )
             popup_menu.post(event.x_root, event.y_root)
     

@@ -74,6 +74,11 @@ class ContactModel:
             cursor.execute("SELECT COUNT(*) FROM contacts")
         return cursor.fetchone()[0]
     
+    def get_all_contacts(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM contacts")
+        return cursor.fetchall()
+    
     def import_csv(self, file_path):
         try:
             with open(file_path, 'r', newline='') as csvfile:
@@ -88,6 +93,18 @@ class ContactModel:
             return True, "Contacts imported successfully from CSV."
         except Exception as e:
             return False, f"Error importing CSV: {str(e)}"
+    
+    def export_csv(self, file_path):
+        try:
+            contacts = self.get_all_contacts()
+            with open(file_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['ID', 'Name', 'Phone', 'Email', 'Address'])
+                for contact in contacts:
+                    writer.writerow(contact)
+            return True, "Contacts exported successfully to CSV."
+        except Exception as e:
+            return False, f"Error exporting CSV: {str(e)}"
     
     def close(self):
         self.conn.close()
