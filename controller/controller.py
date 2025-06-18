@@ -3,6 +3,8 @@ from view.view import ContactView
 from tkinter import messagebox, filedialog
 import datetime
 from math import ceil
+from validators.validators import ContactValidator
+
 
 class ContactController:
     def __init__(self, root):
@@ -29,20 +31,38 @@ class ContactController:
     
     def add_contact(self):
         data = self.view.get_form_data()
-        if data['name']:
-            self.model.add_contact(
-                data['name'], 
-                data['phone'], 
-                data['email'], 
-                data['address']
-            )
-            self.view.clear_form()
-            self.display_contacts()
-        else:
-            messagebox.showerror("Error", "Name field is required.")
+        errors = ContactValidator.validate_contact(
+            data['name'], 
+            data['phone'], 
+            data['email']
+        )
+        
+        if errors:
+            messagebox.showerror("Validation Error", "\n".join(errors))
+            return
+            
+        self.model.add_contact(
+            data['name'], 
+            data['phone'], 
+            data['email'], 
+            data['address']
+        )
+        self.view.clear_form()
+        self.display_contacts()
+        messagebox.showinfo("Success", "Contact added successfully.")
     
     def edit_contact(self, contact_id):
         data = self.view.get_form_data()
+        errors = ContactValidator.validate_contact(
+            data['name'], 
+            data['phone'], 
+            data['email']
+        )
+        
+        if errors:
+            messagebox.showerror("Validation Error", "\n".join(errors))
+            return
+            
         if contact_id:
             self.model.update_contact(
                 contact_id,
@@ -53,8 +73,8 @@ class ContactController:
             )
             self.view.clear_form()
             self.display_contacts()
-            messagebox.showinfo("Edit Successful", "Contact edited successfully.")
-    
+            messagebox.showinfo("Edit Successful", "Contact edited successfully.")  
+            
     def delete_contact(self, contact_id):
         if contact_id:
             self.model.delete_contact(contact_id)
